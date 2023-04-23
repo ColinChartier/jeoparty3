@@ -1,6 +1,7 @@
 const request = require('request');
 const qs = require('query-string');
 const _ = require('lodash');
+const {generateCategories} = require("./aiservice");
 
 const formatRaw = require('./format').formatRaw;
 const formatCategory = require('./format').formatCategory;
@@ -76,110 +77,33 @@ const getDailyDoubleIndices = () => {
     return [categoryIndex, clueIndex, djCategoryIndex1, djClueIndex1, djCategoryIndex2, djClueIndex2];
 };
 
-//{
-//   id: 1876,
-//   title: 'tv stars',
-//   clues_count: 15,
-//   clues: [
-//     {
-//       id: 201361,
-//       answer: '(Ray) Romano',
-//       question: `Everybody loved this sitcom star as Zoe Kazan's dad in "The Big Sick"`,
-//       value: 200,
-//       airdate: '2020-03-18T19:00:00.000Z',
-//       category_id: 1876,
-//       game_id: 6581,
-//       invalid_count: null
-const getAICategory = async cb => {
-    try {
-        const {Configuration, OpenAIApi} = await import("openai");
-        const configuration = new Configuration({
-            organization: "org-FUQ2Mg2xMn8YIFNyrwjMBnk1",
-            apiKey: process.env.OPENAI_API_KEY,
-        });
-        const openai = new OpenAIApi(configuration);
-        let response = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
-            messages: [
-                {
-                    role: "user",
-                    content: "give a single jeopardy category name",
 
-                }
-            ],
-            temperature: 0.7,
-            n: 1,
-        });
-        const title = /^(.*?)[.?!]?$/.exec(response.data.choices[0].message.content)[1];
-
-        response = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
-            messages: [
-                {
-                    role: "user",
-                    content: `For the trivia game category '${title}', create five increasingly difficult questions in the form Q1: ..., A1: ..., Q2: ..., A2: ..., Q3: ..., A3: ..., Q4: ..., A4: ..., Q5: ..., A5: ...`,
-                }
-            ],
-            temperature: 0.7,
-            n: 1,
-        });
-
-        let textSplit = response.data.choices[0].message.content.split(/[QA][1-5]: /);
-        textSplit = textSplit.map(x => x.trim()).filter(x => x !== "");
-        if(textSplit.length !== 10) {
-            cb(true, `didn't get five questions and answers: ${textSplit.length}`)
-            return
-        }
-        const res = {
-            id: Math.floor(1+Math.random()*10000)+MAX_CATEGORY_ID,
-            title,
-            clues_count: 5,
-            clues: []
-        };
-        for(let i = 0; i < 5; i += 1) {
-            res.clues.push({
-                id: res.id+1+i,
-                question: textSplit[i*2],
-                answer: textSplit[i*2+1],
-                value: (i+1)*100,
-                airdate: '2020-03-18T19:00:00.000Z',
-                category_id: res.id,
-                game_id: 1000,
-            })
-        }
-        cb(false, res);
-    } catch (e) {
-        console.log(`Error: ${e}`);
-        cb(true, e);
-    }
-}
-
-const getRandomCategory = (cb) => {
-    if(Math.random() < 1) {
-        getAICategory(cb);
-        return;
-    }
-
-
-    const categoryId = Math.floor(Math.random() * MAX_CATEGORY_ID) + 1;
-
-    js.category(categoryId, (error, response, category) => {
-        if (!error && response.statusCode === 200) {
-            const cluesCount = category.clues_count;
-            const startingIndex = Math.round((Math.random() * (cluesCount - 5)) / 5) * 5;
-            category.clues = category.clues.slice(startingIndex, startingIndex + 5);
-
-            if (approveCategory(category)) {
-                cb(false, formatCategory(category));
-            } else {
-                cb(false, {categoryId: categoryId})
-            }
-        } else {
-            console.log(`Error: ${response.statusCode}`);
-            cb(true, { categoryId: categoryId });
-        }
-    });
-};
+// const getRandomCategory = (cb) => {
+//     if(Math.random() < 1) {
+//         getAICategory(cb);
+//         return;
+//     }
+//
+//
+//     const categoryId = Math.floor(Math.random() * MAX_CATEGORY_ID) + 1;
+//
+//     js.category(categoryId, (error, response, category) => {
+//         if (!error && response.statusCode === 200) {
+//             const cluesCount = category.clues_count;
+//             const startingIndex = Math.round((Math.random() * (cluesCount - 5)) / 5) * 5;
+//             category.clues = category.clues.slice(startingIndex, startingIndex + 5);
+//
+//             if (approveCategory(category)) {
+//                 cb(false, formatCategory(category));
+//             } else {
+//                 cb(false, {categoryId: categoryId})
+//             }
+//         } else {
+//             console.log(`Error: ${response.statusCode}`);
+//             cb(true, { categoryId: categoryId });
+//         }
+//     });
+// };
 
 const approveCategory = (category) => {
     const rawCategoryTitle = formatRaw(category.title);
@@ -232,49 +156,59 @@ const approveGame = (categories, doubleJeopartyCategories, finalJeopartyClue) =>
     return true;
 };
 
-exports.getRandomCategories = (cb) => {
-    let categories = [];
-    let doubleJeopartyCategories = [];
-    let finalJeopartyClue = {};
-    let usedCategoryIds = [];
+exports.getRandomCategories = async (cb) => {
+    const allCategories = await generateCategories(12);
 
-    const recursiveGetRandomCategory = () => {
-        getRandomCategory((error, category) => {
-            console.log(`error: ${error}, categoryId: ${category.id}, clues: ${category?.clues}, categories: ${categories.length}, doubleJeopardyCategories: ${doubleJeopartyCategories.length}`);
-            if (error) {
-                cb(categories, doubleJeopartyCategories, finalJeopartyClue, true);
-            } else if (!category || usedCategoryIds.includes(category.id) || !category.clues || category.clues.length != NUM_CLUES) {
-                recursiveGetRandomCategory();
-            } else {
-                if (categories.length < NUM_CATEGORIES) {
-                    categories.push(category);
-                } else if (doubleJeopartyCategories.length < NUM_CATEGORIES) {
-                    doubleJeopartyCategories.push(category);
-                } else {
-                    finalJeopartyClue = choice(finalJeopartyClues);
-                    finalJeopartyClue.categoryName = finalJeopartyClue.category;
-                }
+    const categories = allCategories.slice(0, 6);
+    const doubleJeopartyCategories = allCategories.slice(6, 12);
+    const finalJeopartyClue = choice(finalJeopartyClues);
+    finalJeopartyClue.categoryName = finalJeopartyClue.category;
 
-                usedCategoryIds.push(category.id);
+    const [categoryIndex, clueIndex, djCategoryIndex1, djClueIndex1, djCategoryIndex2, djClueIndex2] = getDailyDoubleIndices();
+    categories[categoryIndex].clues[clueIndex].dailyDouble = true;
+    doubleJeopartyCategories[djCategoryIndex1].clues[djClueIndex1].dailyDouble = true;
+    doubleJeopartyCategories[djCategoryIndex2].clues[djClueIndex2].dailyDouble = true;
 
-                if (approveGame(categories, doubleJeopartyCategories, finalJeopartyClue)) {
-                    const [categoryIndex, clueIndex, djCategoryIndex1, djClueIndex1, djCategoryIndex2, djClueIndex2] = getDailyDoubleIndices();
-                    categories[categoryIndex].clues[clueIndex].dailyDouble = true;
-                    doubleJeopartyCategories[djCategoryIndex1].clues[djClueIndex1].dailyDouble = true;
-                    doubleJeopartyCategories[djCategoryIndex2].clues[djClueIndex2].dailyDouble = true;
+    cb(categories, doubleJeopartyCategories, finalJeopartyClue, false);
+    // return;
 
-                    // DEBUG
-                    // const categoryName = categories[categoryIndex].title;
-                    // const dollarValue = 200 * (clueIndex + 1);
-                    // console.log(`Daily double is '${categoryName} for $${dollarValue}'`);
-
-                    cb(categories, doubleJeopartyCategories, finalJeopartyClue, false);
-                } else {
-                    recursiveGetRandomCategory();
-                }
-            }
-        });
-    };
-
-    recursiveGetRandomCategory();
+    // const recursiveGetRandomCategory = () => {
+    //     getRandomCategory((error, category) => {
+    //         console.log(`error: ${error}, categoryId: ${category.id}, clues: ${category?.clues}, categories: ${categories.length}, doubleJeopardyCategories: ${doubleJeopartyCategories.length}`);
+    //         if (error) {
+    //             cb(categories, doubleJeopartyCategories, finalJeopartyClue, true);
+    //         } else if (!category || usedCategoryIds.includes(category.id) || !category.clues || category.clues.length != NUM_CLUES) {
+    //             recursiveGetRandomCategory();
+    //         } else {
+    //             if (categories.length < NUM_CATEGORIES) {
+    //                 categories.push(category);
+    //             } else if (doubleJeopartyCategories.length < NUM_CATEGORIES) {
+    //                 doubleJeopartyCategories.push(category);
+    //             } else {
+    //                 finalJeopartyClue = choice(finalJeopartyClues);
+    //                 finalJeopartyClue.categoryName = finalJeopartyClue.category;
+    //             }
+    //
+    //             usedCategoryIds.push(category.id);
+    //
+    //             if (approveGame(categories, doubleJeopartyCategories, finalJeopartyClue)) {
+    //                 const [categoryIndex, clueIndex, djCategoryIndex1, djClueIndex1, djCategoryIndex2, djClueIndex2] = getDailyDoubleIndices();
+    //                 categories[categoryIndex].clues[clueIndex].dailyDouble = true;
+    //                 doubleJeopartyCategories[djCategoryIndex1].clues[djClueIndex1].dailyDouble = true;
+    //                 doubleJeopartyCategories[djCategoryIndex2].clues[djClueIndex2].dailyDouble = true;
+    //
+    //                 // DEBUG
+    //                 // const categoryName = categories[categoryIndex].title;
+    //                 // const dollarValue = 200 * (clueIndex + 1);
+    //                 // console.log(`Daily double is '${categoryName} for $${dollarValue}'`);
+    //
+    //                 cb(categories, doubleJeopartyCategories, finalJeopartyClue, false);
+    //             } else {
+    //                 recursiveGetRandomCategory();
+    //             }
+    //         }
+    //     });
+    // };
+    //
+    // recursiveGetRandomCategory();
 };
