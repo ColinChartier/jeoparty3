@@ -417,7 +417,7 @@ const BrowserLobby = () => {
                 <LogoRow>
                     <Col lg={'12'}>
                         <LogoText>JEOPARTY!</LogoText>
-                        <JoinText>JOIN ON YOUR PHONE AT JEOPARTY.IO</JoinText>
+                        <JoinText>JOIN ON YOUR PHONE AT JEOPARTY.ONWEBAPP.IO</JoinText>
                     </Col>
                 </LogoRow>
 
@@ -435,63 +435,9 @@ const BrowserLobby = () => {
                         <InfoHeading>SESSION NAME</InfoHeading>
                         <SessionNameText>{sessionName.toUpperCase()}</SessionNameText>
                     </Col>
-
-                    <Col lg={'4'}>
-                        <InfoHeading>LEADERBOARD</InfoHeading>
-                        <LeaderboardButton onClick={() => setDisplayLeaderboardName('week')} variant={displayLeaderboardName === 'week' ? 'light' : 'outline-light'}>THIS WEEK</LeaderboardButton>
-                        <LeaderboardButton onClick={() => setDisplayLeaderboardName('month')} variant={displayLeaderboardName === 'month' ? 'light' : 'outline-light'}>THIS MONTH</LeaderboardButton>
-                        <LeaderboardButton onClick={() => setDisplayLeaderboardName('allTime')} variant={displayLeaderboardName === 'allTime' ? 'light' : 'outline-light'}>ALL TIME</LeaderboardButton>
-                        <Row>
-                            <LeaderboardPlayerNames lg={'6'}>
-                                <InfoList>
-                                    {_.get(leaderboards, `[${displayLeaderboardName}]`, []).map((leader) => {
-                                        return (
-                                            <li key={leader.name}>
-                                                <InfoText>
-                                                    {leader.position === 0 ? <HypeText text={leader.name.toUpperCase()} rainbow={true} /> : leader.name.toUpperCase()}
-                                                </InfoText>
-                                            </li>
-                                        )
-                                    })}
-                                </InfoList>
-                            </LeaderboardPlayerNames>
-
-                            <LeaderboardScores lg={'6'}>
-                                <InfoList>
-                                    {_.get(leaderboards, `[${displayLeaderboardName}]`, []).map((leader) => {
-                                        return (
-                                            <li key={leader.name}>
-                                                <InfoText>
-                                                    {leader.position === 0 ? <HypeText text={'$' + leader.score} rainbow={true} /> : '$' + leader.score}
-                                                </InfoText>
-                                            </li>
-                                        );
-                                    })}
-                                </InfoList>
-                            </LeaderboardScores>
-                        </Row>
-                    </Col>
                 </InfoRow>
 
                 <StartGameInputGroup className={'mb-3 justify-content-center'}>
-                    {/* {
-                        categoriesLoaded && (
-                            <DecadeDropdown
-                                id={`dropdown-split-variants-outline-light`}
-                                variant={'outline-light'}
-                                title={`CLUE DECADES: ${decade}+`}
-                                onSelect={handleDecadeDropdownSelect}
-                                value={decade}
-                            >
-                                <Dropdown.Item eventKey={1980} value={1980} active={decade === 1980}>1980+</Dropdown.Item>
-                                <Dropdown.Item eventKey={1990} value={1990} active={decade === 1990}>1990+</Dropdown.Item>
-                                <Dropdown.Item eventKey={2000} value={2000} active={decade === 2000}>2000+</Dropdown.Item>
-                                <Dropdown.Item eventKey={2010} value={2010} active={decade === 2010}>2010+</Dropdown.Item>
-                            </DecadeDropdown>
-                        )
-                    } */}
-                    
-
                     {
                         !mute && (
                             categoriesLoaded ? <StartGameButton onClick={() => handleStartGame()} variant={'outline-light'}>START GAME</StartGameButton>

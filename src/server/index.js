@@ -4,9 +4,6 @@ const express = require('express');
 const cookie = require('cookie');
 const randomWords = require('random-words');
 
-const Airbrake = require('@airbrake/node');
-const airbrakeExpress = require('@airbrake/node/dist/instrumentation/express');
-
 const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
@@ -28,19 +25,6 @@ const checkPlayerName = require('../helpers/check').checkPlayerName;
 const checkAnswer = require('../helpers/check').checkAnswer;
 const formatRaw = require('../helpers/format').formatRaw;
 const formatWager = require('../helpers/format').formatWager;
-const handleLeaderboardReset = require('../helpers/db').handleLeaderboardReset;
-const getLeaderboards = require('../helpers/db').getLeaderboards;
-// const resetLeaderboard = require('../helpers/db').resetLeaderboard;
-const updateLeaderboard = require('../helpers/db').updateLeaderboard;
-
-const airbrake = new Airbrake.Notifier({
-    projectId: process.env.AIRBRAKE_PROJECT_ID,
-    projectKey: process.env.AIRBRAKE_PROJECT_KEY
-});
-// const airbrake = new Airbrake.Notifier({
-//     projectId: api.AIRBRAKE_PROJECT_ID,
-//     projectKey: api.AIRBRAKE_PROJECT_KEY
-// });
 
 const STARTING_DECADE = 2000;
 const NUM_CATEGORIES = 6;
@@ -54,10 +38,8 @@ const NUM_CLUES = 5;
 //     }
 // });
 
-app.use(airbrakeExpress.makeMiddleware(airbrake));
 app.use(express.static(path.join(__dirname, '../../build')));
 app.get('/', (req, res, next) => res.sendFile(__dirname + './index.html'));
-app.use(airbrakeExpress.makeErrorHandler(airbrake));
 
 // Session cache helpers
 
@@ -147,15 +129,12 @@ const handleRandomCategoriesResults = (sessionName, decade, categories, doubleJe
         return;
     }
 
-    // Prevent a completed old request from overwriting a more recent request for new categories
-    if (decade === gameSession.decade) {
-        updateGameSession(sessionName, 'categories', categories);
-        updateGameSession(sessionName, 'doubleJeopartyCategories', doubleJeopartyCategories);
-        updateGameSession(sessionName, 'finalJeopartyClue', finalJeopartyClue);
+    updateGameSession(sessionName, 'categories', categories);
+    updateGameSession(sessionName, 'doubleJeopartyCategories', doubleJeopartyCategories);
+    updateGameSession(sessionName, 'finalJeopartyClue', finalJeopartyClue);
 
-        updateGameSession(sessionName, 'categoriesLoaded', true);
-        gameSession.browserClient.emit('categories_loaded', true);
-    }
+    updateGameSession(sessionName, 'categoriesLoaded', true);
+    gameSession.browserClient.emit('categories_loaded', true);
 };
 
 const setOldScores = (sessionName) => {
@@ -847,19 +826,9 @@ const showPodium = (sessionName, championOverride) => {
             client.emit('player', _.get(gameSession, `players[${client.id}]`));
         });
     });
-
-    updateLeaderboard(gameSession.players);
 };
 
 io.on('connection', (socket) => {
-    airbrake.addFilter((notice) => {
-        if (socket.sessionName) {
-            notice.params = { session: sessionCache.get(socket.sessionName) };
-        }
-
-        return notice;
-    });
-
     socket.emit('connect_device');
 
     socket.on('connect_device', async (isMobile) => {
@@ -880,12 +849,6 @@ io.on('connection', (socket) => {
 
             socket.emit('session_name', sessionName);
             socket.emit('active_players', sessionCache.keys().length - 1);
-
-            handleLeaderboardReset().then(() => {
-                getLeaderboards().then((leaderboards) => {
-                    socket.emit('leaderboards', leaderboards);
-                });
-            });
 
             getRandomCategories(STARTING_DECADE, (categories, doubleJeopartyCategories, finalJeopartyClue, error) => {
                 handleRandomCategoriesResults(sessionName, STARTING_DECADE, categories, doubleJeopartyCategories, finalJeopartyClue, error);
