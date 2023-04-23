@@ -26,7 +26,6 @@ const checkAnswer = require('../helpers/check').checkAnswer;
 const formatRaw = require('../helpers/format').formatRaw;
 const formatWager = require('../helpers/format').formatWager;
 
-const STARTING_DECADE = 2000;
 const NUM_CATEGORIES = 6;
 const NUM_CLUES = 5;
 
@@ -117,7 +116,7 @@ const updatePlayer = (sessionName, socketId, key, value) => {
     }
 };
 
-const handleRandomCategoriesResults = (sessionName, decade, categories, doubleJeopartyCategories, finalJeopartyClue, error) => {
+const handleRandomCategoriesResults = (sessionName, categories, doubleJeopartyCategories, finalJeopartyClue, error) => {
     if (!sessionCache.get(sessionName)) {
         return;
     }
@@ -850,8 +849,8 @@ io.on('connection', (socket) => {
             socket.emit('session_name', sessionName);
             socket.emit('active_players', sessionCache.keys().length - 1);
 
-            getRandomCategories(STARTING_DECADE, (categories, doubleJeopartyCategories, finalJeopartyClue, error) => {
-                handleRandomCategoriesResults(sessionName, STARTING_DECADE, categories, doubleJeopartyCategories, finalJeopartyClue, error);
+            getRandomCategories((categories, doubleJeopartyCategories, finalJeopartyClue, error) => {
+                handleRandomCategoriesResults(sessionName, categories, doubleJeopartyCategories, finalJeopartyClue, error);
             });
         }
     });
@@ -897,23 +896,6 @@ io.on('connection', (socket) => {
             gameSession.browserClient.emit('players', gameSession.players);
         } else {
             socket.emit('submit_signature_failure', checkPlayerMessage);
-        }
-    });
-
-    socket.on('decade', (decade) => {
-        if (!sessionCache.get(socket.sessionName)) {
-            return;
-        }
-
-        const gameSession = sessionCache.get(socket.sessionName);
-
-        if (gameSession.categoriesLoaded) {
-            updateGameSession(socket.sessionName, 'decade', decade);
-            updateGameSession(socket.sessionName, 'categoriesLoaded', false);
-
-            getRandomCategories(decade, (categories, doubleJeopartyCategories, finalJeopartyClue) => {
-                handleRandomCategoriesResults(socket.sessionName, decade, categories, doubleJeopartyCategories, finalJeopartyClue);
-            });
         }
     });
 
