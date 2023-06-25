@@ -417,7 +417,7 @@ const BrowserLobby = () => {
                 <LogoRow>
                     <Col lg={'12'}>
                         <LogoText>JEOPARTY!</LogoText>
-                        <JoinText>JOIN ON YOUR PHONE AT JEOPARTY.ONWEBAPP.IO</JoinText>
+                        <JoinText>{`JOIN ON YOUR PHONE AT http://192.168.2.135:8080`}</JoinText>
                     </Col>
                 </LogoRow>
 

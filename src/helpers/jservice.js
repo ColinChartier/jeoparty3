@@ -157,8 +157,10 @@ const approveGame = (categories, doubleJeopartyCategories, finalJeopartyClue) =>
 };
 
 exports.getRandomCategories = async (cb) => {
-    const allCategories = await generateCategories(12);
-
+    let allCategories = await generateCategories(12);
+    while (allCategories.length !== 12) {
+        allCategories = await generateCategories(12);
+    }
     const categories = allCategories.slice(0, 6);
     const doubleJeopartyCategories = allCategories.slice(6, 12);
     const finalJeopartyClue = choice(finalJeopartyClues);

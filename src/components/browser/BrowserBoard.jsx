@@ -196,12 +196,16 @@ const BrowserBoard = () => {
     const socket = useContext(SocketContext);
 
     const reveal = (categories, doubleJeoparty, boardControllerName) => {
+	console.log("reveal called");
         revealBoard(setBoardRevealMatrix, () => {
+	    console.log("revealBoard called");
             setTimeout(() => {
                 setShowCategoryReveal(true);
 
                 setTimeout(() => {
+	            console.log("revealCategories");
                     revealCategories(categories, doubleJeoparty, setCategoryPanelIndex, setCategoryRevealIndex, () => {
+	                console.log("revealCategories callback done");
                         setShowCategoryReveal(false);
                         setBoardRevealed(true);
 
