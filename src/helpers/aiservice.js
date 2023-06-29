@@ -71,9 +71,11 @@ const generateCategories = async numCategories => {
 //    });
 //    console.log(response.data.choices[0].message.content);
 //    const titles = response.data.choices[0].message.content.split("---").map(x => x.trim()).filter(x => x !== "").map(x => /^[0-9\-.]*(.*?)[.?!]?$/.exec(x)[1])
-    const titles = ["Canadian inventions", "2000s pop music", "corporate espionage", "Y Combinator", "Barbaric medicine", "dogs by their countries", "African Animals", "Computer science", "World geography", "Ontario's parks", "Toronto sports", "Forbes under 30 in jail"];
+    const titles = ["Fruits", "2000s celebrities", "pop 2000s music", "2000s sports history", "2000s historic events", "Cat facts", "Countries by their exports", "Canadian oligopolies", "Disney trivia", "Friends the show", "Y Combinator Founders", "The Beatles songs by their lyrics"];
     const cluesForTitles = await Promise.all(titles.map(title => generateQuestions({openai, categoryTitle: title})));
-    console.log("generated titles");
+    for(let i = 0; i < numCategories; i += 1) {
+        console.log("clue for title " + i + ": " + cluesForTitles[i].length);
+    }
 
     const res = [];
     for(let i = 0; i < numCategories; i += 1) {

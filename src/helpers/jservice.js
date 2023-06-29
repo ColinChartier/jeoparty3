@@ -161,6 +161,7 @@ exports.getRandomCategories = async (cb) => {
     while (allCategories.length !== 12) {
         allCategories = await generateCategories(12);
     }
+    console.log("all categories found");
     const categories = allCategories.slice(0, 6);
     const doubleJeopartyCategories = allCategories.slice(6, 12);
     const finalJeopartyClue = choice(finalJeopartyClues);
@@ -171,6 +172,7 @@ exports.getRandomCategories = async (cb) => {
     doubleJeopartyCategories[djCategoryIndex1].clues[djClueIndex1].dailyDouble = true;
     doubleJeopartyCategories[djCategoryIndex2].clues[djClueIndex2].dailyDouble = true;
 
+    console.log("set double jeoparty, calling callback")
     cb(categories, doubleJeopartyCategories, finalJeopartyClue, false);
     // return;
 

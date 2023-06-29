@@ -117,6 +117,7 @@ const updatePlayer = (sessionName, socketId, key, value) => {
 };
 
 const handleRandomCategoriesResults = (sessionName, categories, doubleJeopartyCategories, finalJeopartyClue, error) => {
+    console.log("handle random categories");
     if (!sessionCache.get(sessionName)) {
         return;
     }
@@ -128,11 +129,13 @@ const handleRandomCategoriesResults = (sessionName, categories, doubleJeopartyCa
         return;
     }
 
+    console.log("handle random categories 2");
     updateGameSession(sessionName, 'categories', categories);
     updateGameSession(sessionName, 'doubleJeopartyCategories', doubleJeopartyCategories);
     updateGameSession(sessionName, 'finalJeopartyClue', finalJeopartyClue);
 
     updateGameSession(sessionName, 'categoriesLoaded', true);
+    console.log("handle random categories 3");
     gameSession.browserClient.emit('categories_loaded', true);
 };
 
