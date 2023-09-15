@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const path = require('path');
 const express = require('express');
-const cors = require('cors');
 const cookie = require('cookie');
 const randomWords = require('random-words');
 
