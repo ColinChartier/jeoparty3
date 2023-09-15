@@ -41,7 +41,7 @@
   "scripts": {
     "build": "NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
     "dev": "node ./src/server/index.js",
-    "debug": "react-scripts start",
+    "debug": "NODE_OPTIONS=--openssl-legacy-provider react-scripts start",
     "test": "mocha",
     "eject": "react-scripts eject"
   },
