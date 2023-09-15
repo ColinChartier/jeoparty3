@@ -50,13 +50,16 @@ const generateQuestions = async ({openai, categoryTitle}) => {
 const generateCategories = async titles => {
     const {Configuration, OpenAIApi} = await import("openai");
     const configuration = new Configuration({
-        organization: "org-FUQ2Mg2xMn8YIFNyrwjMBnk1",
+        organization: process.env.OPENAI_ORG_ID,
         apiKey: process.env.OPENAI_API_KEY,
     });
     const openai = new OpenAIApi(configuration);
     const cluesForTitles = await Promise.all(titles.map(title => generateQuestions({openai, categoryTitle: title})));
     for(let i = 0; i < titles.length; i += 1) {
-        console.log("clue for title " + i + ": " + cluesForTitles[i].length);
+        console.log("clues for " + titles[i] + ": " + cluesForTitles[i].length);
+        if(cluesForTitles[i].length !== 5) {
+            throw new Error("Could not generate 5 clues for " + titles[i]);
+        }
     }
 
     const res = [];
@@ -65,7 +68,7 @@ const generateCategories = async titles => {
             id: Math.floor(1 + Math.random() * 10000),
             title: titles[i],
             clues: cluesForTitles[i],
-            clues_count: 5,
+            clues_count: cluesForTitles[i].length,
         })
     }
     return res;
