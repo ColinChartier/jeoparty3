@@ -21,13 +21,11 @@ import mixins from '../../helpers/mixins';
 import HypeText from '../../helpers/components/HypeText';
 
 import lobbyMusicSound from '../../assets/audio/lobbyMusic.mp3';
-import trebekIntroSound from '../../assets/audio/trebekIntro.mp3';
 
 // DEBUG
-import { sampleLeaderboard } from '../../constants/sampleLeaderboard';
 import { samplePlayers } from '../../constants/samplePlayers';
 
-const MuteScreen = styled.div`
+const CenteredContainer = styled.div`
     ${mixins.flexAlignCenter};
     position: absolute;
     z-index: 3;
@@ -36,21 +34,6 @@ const MuteScreen = styled.div`
     width: 100vw;
 
     backdrop-filter: blur(8px);
-`;
-
-const MuteScreenText = styled.div`
-    ${mixins.flexAlignCenter};
-    position: absolute;
-    z-index: 2;
-
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%,-50%);
-`;
-
-const MuteScreenButton = styled(Button)`
-    font-family: clue, serif;
-    font-size: 10vh;
 `;
 
 const ButtonWrapper = styled.div`
@@ -228,15 +211,10 @@ const BrowserLobby = () => {
 
     const [players, setPlayers] = useState(debug ? sortByJoinIndex(samplePlayers) : []);
     const [sessionName, setSessionName] = useState(debug ? 'TEST' : '');
-    const [decade, setDecade] = useState(2000);
+    const [categoriesProvided, setCategoriesProvided] = useState(false);
     const [categoriesLoaded, setCategoriesLoaded] = useState(false);
-    const [leaderboards, setLeaderboards] = useState(debug ? { 'allTime': sampleLeaderboard, 'month': sampleLeaderboard, 'week': sampleLeaderboard } : {});
-    const [displayLeaderboardName, setDisplayLeaderboardName] = useState('week');
     const [activePlayers, setActivePlayers] = useState(debug ? 1 : 0);
-    const [mute, setMute] = useState(true);
-
-    const [showPatchNotesPanel, setShowPatchNotesPanel] = useState(false);
-    const [showEmailPanel, setShowEmailPanel] = useState(false);
+    const [categories, setCategories] = useState(new Array(12).fill(""));
 
     const socket = useContext(SocketContext);
 
@@ -251,26 +229,12 @@ const BrowserLobby = () => {
             setActivePlayers(activePlayers);
         });
 
+        socket.on('categories_provided', categoriesProvided => {
+            setCategoriesProvided(categoriesProvided);
+        })
+
         socket.on('categories_loaded', (categoriesLoaded) => {
             setCategoriesLoaded(categoriesLoaded);
-        });
-
-        socket.on('leaderboards', (leaderboards) => {
-            setLeaderboards(leaderboards);
-        });
-
-        socket.on('unmute', () => {
-            lobbyMusicAudio.loop = true;
-            lobbyMusicAudio.volume = 0.5;
-            lobbyMusicAudio.play();
-
-            const trebekIntroAudio = new Audio(trebekIntroSound);
-
-            trebekIntroAudio.onended = () => {
-                lobbyMusicAudio.volume = 1;
-            };
-
-            trebekIntroAudio.play();
         });
 
         socket.on('start_game_success', () => {
@@ -293,20 +257,10 @@ const BrowserLobby = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleUnmute = useCallback(() => {
-        setMute(false);
-        socket.emit('unmute');
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const handleDecadeDropdownSelect = useCallback((e) => {
-        setDecade(e);
-        setCategoriesLoaded(false);
-
-        socket.emit('decade', e);
-
-         // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        lobbyMusicAudio.loop = true;
+        lobbyMusicAudio.volume = 1;
+        lobbyMusicAudio.play();
     }, []);
 
     const handleStartGame = useCallback(() => {
@@ -321,103 +275,54 @@ const BrowserLobby = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleEmail = useCallback((e) => {
-        e.preventDefault();
-
-        emailjs.sendForm(
-            'service_ukf1tzq',
-            'template_aewkijo',
-            e.target,
-            'user_Y0EyYUhU4F4OA6pWPcs4N'
-        ).then((result) => {
-            console.log(result.text);
-        }, (error) => {
-            console.log(error.text);
-        });
-
-        setShowEmailPanel(false);
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     return (
         <div>
-            {(mute && !showPatchNotesPanel) &&
-                <MuteScreen>
-                    <MuteScreenText onClick={() => handleUnmute()}>
-                        <MuteScreenButton variant={'outline-light'}>CLICK TO UNMUTE</MuteScreenButton>
-                    </MuteScreenText>
-                </MuteScreen>
-            }
-
-            {showEmailPanel &&
-                <MuteScreen>
-                    <EmailPanel>
-                        <EmailPanelCancelButton onClick={() => setShowEmailPanel(false)}>
-                            <ImCancelCircle size={'20px'} />
-                        </EmailPanelCancelButton>
-
-                        <Form onSubmit={handleEmail}>
-                            <Form.Group className={'mb-3'} controlId={'exampleForm.ControlTextarea1'}>
-                                <Form.Label>Message</Form.Label>
-                                <Form.Control as={'textarea'} rows={8} name={'message'} placeholder={'Enter your questions, comments, concerns, or feedback...'} />
-                            </Form.Group>
-
-                            <Form.Group className={'mb-3'} controlId={'exampleForm.ControlInput1'}>
-                                <Form.Label>Email address (optional)</Form.Label>
-                                <Form.Control type={'email'} name={'emailAddress'} placeholder={`Only include if you'd like to hear back from me`} />
-                            </Form.Group>
-
-                            <Button variant={'outline-light'} type={'submit'}>
-                                Submit
-                            </Button>
-                        </Form>
-                    </EmailPanel>
-                </MuteScreen>
-            }
-
-            {showPatchNotesPanel &&
-                <MuteScreen>
-                    <EmailPanel>
-                        <EmailPanelCancelButton onClick={() => setShowPatchNotesPanel(false)}>
-                            <ImCancelCircle size={'20px'} />
-                        </EmailPanelCancelButton>
-
-                        <PatchNotesPanel>
-                            <h1>Update</h1>
-
-                            <PatchNotesText>
-                                I've been waiting for Jeoparty! to be crash-free to work on bigger features. It looks like my most recent update helped.
-                                If you're still seeing crashes anywhere in the game PLEASE send me an email, I want the game to be in a stable state.
-                                Thank you to everyone who played even when you couldn't finish games 90% of the time.
-                                <br /><br />
-                                For now, take this new feature: monthly, weekly, and all-time leaderboards! With this change, I'm clearing the leaderboards completely.
-                                Sorry Randolph 1-10... it was a good run.
-                                <br /><br />
-                                A final note: you may have noticed that I added decade selection and removed it immediately. There are issues with the clue database. Decade
-                                selection will be back soon. For now, all categories are from the year 2000+
-
-                                <br /><br />
-                                -Isaac<br/>
-                                1/30/2023
-                            </PatchNotesText>
-                        </PatchNotesPanel>
-
-                        <Button variant={'outline-light'} onClick={() => {
-                            setShowPatchNotesPanel(false);
-                            handleUnmute();
-                        }}>
-                            Close (and unmute)
-                        </Button>
-                    </EmailPanel>
-                </MuteScreen>
-            }
+            {!categoriesProvided && <CenteredContainer>
+                <div style={{display: "flex", justifyContent: "center", gap: "16px"}}>
+                    <div style={{display: "flex", flexDirection: "column", gap: "4px"}}>
+                        <h3>First round categories</h3>
+                        {(new Array(6).fill(null))
+                            .map((_, i) => <input
+                                key={i}
+                                type="text"
+                                placeholder={"Question " + (i+1)}
+                                value={categories[i]}
+                                onChange={e => setCategories(prev => {
+                                    prev[i] = e.target.value;
+                                    return [...prev]
+                                })}
+                            />)}
+                    </div>
+                    <div style={{display: "flex", flexDirection: "column", gap: "4px"}}>
+                        <h3>Second round categories</h3>
+                        {(new Array(6).fill(null))
+                            .map((_, i) => <input
+                                key={i}
+                                type="text"
+                                placeholder={"Question " + (i+1)}
+                                value={categories[i+6]}
+                                onChange={e => setCategories(prev => {
+                                    prev[i+6] = e.target.value;
+                                    return [...prev]
+                                })}
+                            />)}
+                    </div>
+                </div>
+                <div style={{display: "flex", justifyContent: "center", marginTop: "16px"}}>
+                    <button
+                        onClick={() => {
+                            socket.emit('user_provided_categories', JSON.stringify(categories));
+                        }}
+                        type="button"
+                    >Submit categories</button>
+                </div>
+            </CenteredContainer>}
 
             <Container fluid>
                 <LogoRow>
                     <Col lg={'12'}>
-                        <LogoText>JEOPARTY!</LogoText>
-                        <JoinText>JOIN ON YOUR PHONE AT JEOPARTY.ONWEBAPP.IO</JoinText>
+                        <LogoText>AI JEOPARDY</LogoText>
+                        <JoinText>{`JOIN ON YOUR PHONE AT https://aijeopardy.org`}</JoinText>
                     </Col>
                 </LogoRow>
 
@@ -439,18 +344,12 @@ const BrowserLobby = () => {
 
                 <StartGameInputGroup className={'mb-3 justify-content-center'}>
                     {
-                        !mute && (
-                            categoriesLoaded ? <StartGameButton onClick={() => handleStartGame()} variant={'outline-light'}>START GAME</StartGameButton>
-                                             : <StartGameButton variant={'outline-light'} disabled={true}>CATEGORIES LOADING...</StartGameButton>
-                        )
+                        categoriesLoaded ? <StartGameButton onClick={() => handleStartGame()} variant={'outline-light'}>START GAME</StartGameButton>
+                                         : <StartGameButton variant={'outline-light'} disabled={true}>GENERATING CLUES FOR YOUR CATEGORIES</StartGameButton>
                     }
                 </StartGameInputGroup>
 
                 <ButtonWrapper>
-                    <span onClick={() => setShowEmailPanel(true)}>
-                        <AiOutlineMail size={'50px'} />
-                    </span>
-
                     <InfoButtonWrapper onClick={() => handleInfo()}>
                         <AiOutlineInfoCircle size={'40px'} />
                     </InfoButtonWrapper>

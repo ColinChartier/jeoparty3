@@ -156,9 +156,8 @@ const approveGame = (categories, doubleJeopartyCategories, finalJeopartyClue) =>
     return true;
 };
 
-exports.getRandomCategories = async (cb) => {
-    const allCategories = await generateCategories(12);
-
+exports.getRandomCategories = async titles => {
+    let allCategories = await generateCategories(titles);
     const categories = allCategories.slice(0, 6);
     const doubleJeopartyCategories = allCategories.slice(6, 12);
     const finalJeopartyClue = choice(finalJeopartyClues);
@@ -169,46 +168,5 @@ exports.getRandomCategories = async (cb) => {
     doubleJeopartyCategories[djCategoryIndex1].clues[djClueIndex1].dailyDouble = true;
     doubleJeopartyCategories[djCategoryIndex2].clues[djClueIndex2].dailyDouble = true;
 
-    cb(categories, doubleJeopartyCategories, finalJeopartyClue, false);
-    // return;
-
-    // const recursiveGetRandomCategory = () => {
-    //     getRandomCategory((error, category) => {
-    //         console.log(`error: ${error}, categoryId: ${category.id}, clues: ${category?.clues}, categories: ${categories.length}, doubleJeopardyCategories: ${doubleJeopartyCategories.length}`);
-    //         if (error) {
-    //             cb(categories, doubleJeopartyCategories, finalJeopartyClue, true);
-    //         } else if (!category || usedCategoryIds.includes(category.id) || !category.clues || category.clues.length != NUM_CLUES) {
-    //             recursiveGetRandomCategory();
-    //         } else {
-    //             if (categories.length < NUM_CATEGORIES) {
-    //                 categories.push(category);
-    //             } else if (doubleJeopartyCategories.length < NUM_CATEGORIES) {
-    //                 doubleJeopartyCategories.push(category);
-    //             } else {
-    //                 finalJeopartyClue = choice(finalJeopartyClues);
-    //                 finalJeopartyClue.categoryName = finalJeopartyClue.category;
-    //             }
-    //
-    //             usedCategoryIds.push(category.id);
-    //
-    //             if (approveGame(categories, doubleJeopartyCategories, finalJeopartyClue)) {
-    //                 const [categoryIndex, clueIndex, djCategoryIndex1, djClueIndex1, djCategoryIndex2, djClueIndex2] = getDailyDoubleIndices();
-    //                 categories[categoryIndex].clues[clueIndex].dailyDouble = true;
-    //                 doubleJeopartyCategories[djCategoryIndex1].clues[djClueIndex1].dailyDouble = true;
-    //                 doubleJeopartyCategories[djCategoryIndex2].clues[djClueIndex2].dailyDouble = true;
-    //
-    //                 // DEBUG
-    //                 // const categoryName = categories[categoryIndex].title;
-    //                 // const dollarValue = 200 * (clueIndex + 1);
-    //                 // console.log(`Daily double is '${categoryName} for $${dollarValue}'`);
-    //
-    //                 cb(categories, doubleJeopartyCategories, finalJeopartyClue, false);
-    //             } else {
-    //                 recursiveGetRandomCategory();
-    //             }
-    //         }
-    //     });
-    // };
-    //
-    // recursiveGetRandomCategory();
+    return {categories, doubleJeopartyCategories, finalJeopartyClue}
 };

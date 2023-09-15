@@ -75,6 +75,7 @@ export const revealBoard = (setBoardRevealMatrix, onEnd) => {
 };
 
 export const revealCategories = (categories, doubleJeoparty, setCategoryPanelIndex, setCategoryRevealIndex, onEnd) => {
+    console.log("reveal categories");
     sayCategoryRevealIntroductionFiller(doubleJeoparty, () => {
         setCategoryPanelIndex(0);
 

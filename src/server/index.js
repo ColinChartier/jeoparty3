@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const path = require('path');
 const express = require('express');
+const cors = require('cors');
 const cookie = require('cookie');
 const randomWords = require('random-words');
 
@@ -17,7 +18,6 @@ const Player = require('../constants/Player').Player;
 const GameSession = require('../constants/GameSession').GameSession;
 const GameState = require('../constants/GameState').GameState;
 
-// const api = require('../constants/api').api;
 const timers = require('../constants/timers').timers;
 const titles = require('../constants/titles').titles;
 const getRandomCategories = require('../helpers/jservice').getRandomCategories;
@@ -116,17 +116,12 @@ const updatePlayer = (sessionName, socketId, key, value) => {
     }
 };
 
-const handleRandomCategoriesResults = (sessionName, categories, doubleJeopartyCategories, finalJeopartyClue, error) => {
+const handleRandomCategoriesResults = (sessionName, categories, doubleJeopartyCategories, finalJeopartyClue) => {
     if (!sessionCache.get(sessionName)) {
         return;
     }
 
     const gameSession = sessionCache.get(sessionName);
-
-    if (error) {
-        gameSession.browserClient.emit('alert', `The database that powers Jeoparty! (jservice.io) has a request limit, and we reached it! Try again in one minute.`);
-        return;
-    }
 
     updateGameSession(sessionName, 'categories', categories);
     updateGameSession(sessionName, 'doubleJeopartyCategories', doubleJeopartyCategories);
@@ -848,16 +843,32 @@ io.on('connection', (socket) => {
 
             socket.emit('session_name', sessionName);
             socket.emit('active_players', sessionCache.keys().length - 1);
-
-            getRandomCategories((categories, doubleJeopartyCategories, finalJeopartyClue, error) => {
-                handleRandomCategoriesResults(sessionName, categories, doubleJeopartyCategories, finalJeopartyClue, error);
-            });
         }
     });
 
-    socket.on('unmute', () => {
-        socket.emit('unmute');
-    });
+    socket.on('user_provided_categories', async categoriesJson => {
+        const gameSession = sessionCache.get(socket.sessionName)
+
+        if (!gameSession) {
+            return;
+        }
+
+        try {
+            socket.emit('categories_provided', true);
+            const categories = JSON.parse(categoriesJson);
+            if(categories.includes("")) {
+                gameSession.browserClient.emit('alert', `All categories must be provided.`);
+                socket.emit('categories_provided', false);
+                return;
+            }
+            const {doubleJeopartyCategories, finalJeopartyClue} = await getRandomCategories(categories);
+            handleRandomCategoriesResults(socket.sessionName, categories, doubleJeopartyCategories, finalJeopartyClue);
+        } catch(e) {
+            console.log("Could not generate clues for these categories: " + categoriesJson)
+            gameSession.browserClient.emit('alert', `ChatGPT could not generate clues for one or more of your categories.`);
+            socket.emit('categories_provided', false);
+        }
+    })
 
     socket.on('join_session', (sessionName) => {
         sessionName = formatRaw(sessionName);
