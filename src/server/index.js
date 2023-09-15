@@ -854,13 +854,13 @@ io.on('connection', (socket) => {
 
         try {
             socket.emit('categories_provided', true);
-            const categories = JSON.parse(categoriesJson);
-            if(categories.includes("")) {
+            const categoryTitles = JSON.parse(categoriesJson);
+            if(categoryTitles.includes("")) {
                 gameSession.browserClient.emit('alert', `All categories must be provided.`);
                 socket.emit('categories_provided', false);
                 return;
             }
-            const {doubleJeopartyCategories, finalJeopartyClue} = await getRandomCategories(categories);
+            const {doubleJeopartyCategories, categories, finalJeopartyClue} = await getRandomCategories(categoryTitles);
             handleRandomCategoriesResults(socket.sessionName, categories, doubleJeopartyCategories, finalJeopartyClue);
         } catch(e) {
             console.log("Could not generate clues for these categories: " + categoriesJson)
